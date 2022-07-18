@@ -6,10 +6,10 @@
 #include <astro/cosmology/gNewton.h>
 
 forceTerm::forceTerm
-  (astro::abstractGrowthFactor * growth_model_in,
+  (astro::standardGrowthFactor * growth_model_in,
    astro::cosmologyBase * cosmological_model_in,
    astro::gEffective * g_effective_in, double a_norm_in):
-a_min (0.001), a_max (1.0), k_min (0.01), k_max (10.0), k_scale (0.5), k_star (1.0),
+a_min (0.001), a_max (1.0), k_min (0.01), k_max (10.0), k_scale (0.5), k_star (10.0),
 a_save (-1.0), k_save (-1.0), f_k_save (-1.0), f_r_save (-1.0), n_table (32),
 g_effective (g_effective_in)
 {
@@ -335,8 +335,8 @@ double forceTerm::interaction_term_hamilton (double k, double a) /*3*int g_H *G_
 {
   astro::integrator integrate
     ([&] (double x)
-    { double r_c = 2.0/70.0;/*cosmological_model->hubbleFunction(1);*/ 
-      double beta = 1.0+2.0*r_c*(cosmological_model->hubbleFunction(a)/cosmological_model->hubbleFunction(a_min))*(1.0+((cosmological_model->dexpansionFunction_da(a)/cosmological_model->dexpansionFunction_da(a_min))*70.0*(a/a_min))/(3.0*(cosmological_model->hubbleFunction(a)/cosmological_model->hubbleFunction(a_min)))) ;
+    { double r_c = 2.0/cosmological_model->hubbleFunction(1); 
+      double beta = 1.0+2.0*r_c*(cosmological_model->hubbleFunction(a)/cosmological_model->hubbleFunction(a_min))*(1.0+((cosmological_model->dexpansionFunction_da(a)/cosmological_model->dexpansionFunction_da(a_min))*cosmological_model->hubbleFunction(1)*(a/a_min))/(3.0*(cosmological_model->hubbleFunction(a)/cosmological_model->hubbleFunction(a_min)))) ;
       return
         1./a_min*propagator_h->g_qp(a,x)*
         pow(Dplus(x,k),2.)*(sigma_J_sq_table(k,x)+ 2*sigma_J_prime_sq_table(k,x)*pow(k_star/k,3)/(3*beta))/pow(x/a_min,2.)/E(x); },1.0e-2);
