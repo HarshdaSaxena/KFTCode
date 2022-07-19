@@ -1,10 +1,11 @@
 #include <cmath>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_odeiv.h>
+#include <exception>
 
 #include "harshdasGrowthFactor.h"
-#include "gNewton.h"
-#include "../utilities/deSolver.h"
+#include "astro/cosmology/gNewton.h"
+#include "astro/utilities/deSolver.h"
 
 astro::harshdasGrowthFactor::harshdasGrowthFactor
   (cosmologyBase * cosmological_model_in, astro::gEffective * g_effective_in):
@@ -60,5 +61,10 @@ double astro::harshdasGrowthFactor::operator () (double a, double k)
   return result[0]/a;
 }
 
-double astro::harshdasGrowthFactor::gravitationalConstant (double a, double k)
+double astro::harshdasGrowthFactor::gravitationalConstant (double a,double k)
 { return g_effective->operator () (a, k); }
+
+double astro::harshdasGrowthFactor::gravitationalConstant (double a)
+{ 
+  throw std::runtime_error("Do not use astro::harshdasGrowthFactor::gravitationalConstant (double a), always use with k dependence");
+  return 0.0; }

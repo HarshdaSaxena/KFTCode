@@ -1,9 +1,9 @@
-#ifndef ASTRO_STANDARD_GROWTH_FACTOR_H
-#define ASTRO_STANDARD_GROWTH_FACTOR_H
+#ifndef ASTRO_HARSHDAS_GROWTH_FACTOR_H
+#define ASTRO_HARSHDAS_GROWTH_FACTOR_H
 
-#include "cosmologyBase.h"
-#include "abstractGrowthFactor.h"
-#include "gEffective.h"
+#include "astro/cosmology/cosmologyBase.h"
+#include "astro/cosmology/abstractGrowthFactor.h"
+#include "astro/cosmology/gEffective.h"
 
 namespace astro
 {
@@ -65,7 +65,12 @@ namespace astro
      * Returns the effective gravitational constant at scale factor \c a
      * \param a scale factor
      */
-    double gravitationalConstant (const double a, const double k);
+    double gravitationalConstant (const double a, double k);
+
+    /**
+     * Dummy function to comply with abstract base class. Always gives error
+     */
+    double gravitationalConstant (const double a);
   };
 }
 
