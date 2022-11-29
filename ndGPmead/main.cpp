@@ -43,7 +43,6 @@ int main (int argc, char * argv[])
    * Initialize growth factor
    */
   astro::standardGrowthFactor D_lcdm  (&cos_model_1);
-  astro::standardGrowthFactor D_screening (&cos_model_1,&g_screening);
 
   switch (type)
   {
@@ -60,7 +59,7 @@ int main (int argc, char * argv[])
       SI.set_factors
 	(parameters.get("k_factor"), parameters.get("r_factor"), a_final);
 
-      forceTerm SI2 (&D_screening,&cos_model_1,&g_screening,a_final,0);
+      forceTerm SI2 (&D_lcdm,&cos_model_1,&g_screening,a_final,0);
       double k_factor2 = parameters.get("k_factor")*k_scale/SI2.get_Yukawa_scale(a_final);
       SI2.set_factors
 	(k_factor2, parameters.get("r_factor"), a_final);
@@ -71,10 +70,12 @@ int main (int argc, char * argv[])
       write.add_header("#Column 1: wavenumber k");
       write.add_header("#Column 2: non-linear GR");
       write.add_header("#Column 3: non-linear screening");
+      write.add_header("#Column 4: G");
       write.add_header("#evaluated at a = "+std::to_string(a_final));
       write.push_back ([&] (double k) { return SI.analyticP(k,a_final); });
       write.push_back ([&] (double k) { return SI2.analyticP(k,a_final); });
-      write (0.01,10.0,128,astro::LOG_SPACING);
+      write.push_back ([&] (double k) { return g_screening(a_final,k); });
+      write (0.1,10.0,128,astro::LOG_SPACING);
       break;
     
     }

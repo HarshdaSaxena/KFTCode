@@ -9,7 +9,7 @@ forceTerm::forceTerm
   (astro::abstractGrowthFactor * growth_model_in,
    astro::cosmologyBase * cosmological_model_in,
    astro::gEffective * g_effective_in, double a_norm_in, int proptype):
-a_min (0.001), a_max (1.0), k_min (0.01), k_max (10.0), k_scale (0.0), k_star (0.1),
+a_min (0.001), a_max (1.0), k_min (0.1), k_max (10.0), k_scale (0.0), k_star (1.0),
 a_save (-1.0), k_save (-1.0), f_k_save (-1.0), f_r_save (-1.0), n_table (128),
 g_effective (g_effective_in), proptype (proptype)
 {
