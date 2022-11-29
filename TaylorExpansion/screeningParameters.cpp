@@ -19,11 +19,4 @@ cos_model (cosmological_model_in), a_internal (a_in)
   this->param_B  = this->p2;
 }
 
-void screeningParameters::update_a (double a_in)
-{
-  this->a_internal = a_in;
-  double r_c = 0.5/70.0;/*cosmological_model->hubbleFunction(1);*/ 
-  double beta = 1.0+2.0*r_c*(cos_model->hubbleFunction(this->a_internal)/cos_model->hubbleFunction(this->a_min))*(1.0+((cos_model->dexpansionFunction_da(this->a_internal)/cos_model->dexpansionFunction_da(this->a_min))*70.0*(this->a_internal/this->a_min))/(3.0*(cos_model->hubbleFunction(this->a_internal)/cos_model->hubbleFunction(this->a_min)))) ;
-  this->p2 = 1.0/(3*beta);
-  this->param_B  = this->p2;
-}
+

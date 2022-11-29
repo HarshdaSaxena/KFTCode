@@ -1,0 +1,3 @@
+# options containing parameters for optimal overlap
+k_factor  0.873272
+r_factor  1.06308

@@ -7,16 +7,13 @@
 #include "astro/io/functionWriter.h"
 #include "astro/cosmology/cosmicStructures.h"
 #include "astro/cosmology/standardGrowthFactor.h"
-/*
-#include "procaParameters.h"
-#include "procaExpansionModel.h"
-#include "procaDarkEnergyModel.h"
-*/
+#include "astro/utilities/nlModeller.h"
 #include "gScreening.h"
 
 #include "forceTerm.h"
 
 #include "screeningParameters.h"
+
 
 int main (int argc, char * argv[])
 {
@@ -24,12 +21,8 @@ int main (int argc, char * argv[])
    * Read and process command-line arguments
    */
   astro::clArguments ca (argc, argv);
-
-  double qv    = ca.get ("-q", 2.0);
   int type     = ca.get ("-t", 1);
   double a_final = ca.get ("-a", 1.0);
-  std::string model  = ca.get ("-m", "Model1");
-  std::string input  = ca.get ("-i", "parameters.d");
   std::string output = ca.get ("-o", "temp.d");
 
   /**
@@ -44,52 +37,47 @@ int main (int argc, char * argv[])
    */
   astro::cosmologyBase cos_model_1 (omega_m0, omega_d0, hubble, omega_b0);
   cos_model_1.setDarkUniverse (); // Switch off radiation density
+  gScreening g_screening (&cos_model_1);
+
   /**
-   * Initialize Proca model
-   */
-/*
-  procaParameters p_proca = setParameters (input, model);
-  p_proca.qv = qv;             // Set q_V parameter
-  procaExpansionModel e_proca; // Initialize Proca expansion function
-*/
-  /**
-   * Initialize Proca dark-energy model and substitute it in Proca
-   * cosmological model
-   
-  procaDarkEnergyModel de_proca (&e_proca, cos_model_2.getParameters ());
-  cos_model_2.setDarkEnergyModel (&de_proca);
-*/
-  gScreening g_screening (&cos_model_1); // Initalize effective gravitational coupling
-  /**
-   * Initialize growth factors for both models
+   * Initialize growth factor
    */
   astro::standardGrowthFactor D_lcdm  (&cos_model_1);
-  astro::standardGrowthFactor D_screening (&cos_model_1,&g_screening);
 
   switch (type)
   {
 
    /*
-    * Write tables containing the lcdm power spectrum and the exact proca spectrum.
-    * Normalised at a=0.001.
+    * Write power spectra to table
     */
     case (1):
-    {
+    { 
+      astro::parameterFile parameters ("optimised.txt");
+
       forceTerm SI (&D_lcdm,&cos_model_1,NULL,a_final,1);
-      forceTerm SI2 (&D_screening,&cos_model_1,&g_screening,a_final,0);
+      double k_scale = SI.get_Yukawa_scale(a_final);
+      SI.set_factors
+	(parameters.get("k_factor"), parameters.get("r_factor"), a_final);
+
+      forceTerm SI2 (&D_lcdm,&cos_model_1,&g_screening,a_final,0);
+      double k_factor2 = parameters.get("k_factor")*k_scale/SI2.get_Yukawa_scale(a_final);
+      SI2.set_factors
+	(k_factor2, parameters.get("r_factor"), a_final);
+
+      astro::table meadDelta ("mead.txt");
 
       astro::functionWriter write (output);
       write.add_header("#Column 1: wavenumber k");
-      write.add_header("#Column 2: non-linear density fluctuation power spectrum lcdm");
-      write.add_header("#Column 3: non-linear density fluctuation power spectrum screening exact");
-      write.add_header("#Column 4: Taylor expanded");
-      write.add_header("#qv = "+std::to_string(qv));
+      write.add_header("#Column 2: non-linear GR");
+      write.add_header("#Column 3: non-linear screening");
+      write.add_header("#Column 3: Taylor expanded");
       write.add_header("#evaluated at a = "+std::to_string(a_final));
       write.push_back ([&] (double k) { return SI.analyticP(k,a_final); });
       write.push_back ([&] (double k) { return SI2.analyticP(k,a_final); });
-      write.push_back ([&] (double k) { return SI.taylorP(k,a_final); });
-      write (0.01, 10.0, 128, astro::LOG_SPACING);
+       write.push_back ([&] (double k) { return SI.taylorP(k,a_final); });
+      write (0.1,10.0,256,astro::LOG_SPACING);
       break;
+    
     }
 
     default:

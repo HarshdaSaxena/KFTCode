@@ -23,8 +23,8 @@ protected:
   double a_save, k_save;
   double f_k_save, f_r_save;
   unsigned int n_table;
-  double a_norm;
   int proptype;
+  double a_norm;
 
   astro::cosmologyBase * cosmological_model;
   astro::abstractGrowthFactor * growth_model;
@@ -49,7 +49,6 @@ protected:
     f12_parallel_table;
 */
 
-
   bool cos_model_internal, g_eff_internal;
 
   void init_tau ();
@@ -60,23 +59,23 @@ protected:
   double interaction_term_hamilton (double k, double a);
   double interaction_term_normal (double k, double a);
   double taylorfactor (double k, double a);
+
 public:
 
   /**
    * Constructor initialisting the class.
    * \param growth_model_in pointer to input growth factor
    * \param cosmological_model_in pointer to input cosmological model
-   * \param proptype_in integer deciding of hamilton or zeldovich propagators
+   * \param proptype_in integer deciding if hamilton or zeldovich propagators
    * should be used, 0 for hamilton, 1 for zeldovich
    * \param g_effective_in pointer to graviational constant
    * \param a_norm_in scale factor at which the the power spectrum is to be
-   * normalized 
+   * normalized
    */
   forceTerm (astro::abstractGrowthFactor * growth_model_in = NULL,
              astro::cosmologyBase * cosmological_model_in = NULL,
              astro::gEffective * g_effective_in = NULL,
              double a_norm_in = 1.0, int proptype = 1);
-
 
   /**
    * Destructor
@@ -95,20 +94,7 @@ public:
    * \param y0 dimension-less Yukawa scale
    */
   double J (double y, double y0);
-
-  /**
-   * Returns the kernel function to be integrated with the power spectrum to
-   * obtain the mean force between particle pairs.
-   * \f[
-   *   J_prime(y, y_0, y_star) =
-   *    \int_-1^+1 (\frac{1-y\mu}{(1+y_0^2 + y^2 -2*\mu*y)*(1+y^2-2\mu*y)^{3/2})*((1 + \frac{(1+y^2 - 2\mu*y)^{3/2}}{y_star^{3/2}})^{1/2}-1)}
-   * \f]
-   * \param y dimension-less wave number
-   * \param y0 dimension-less Yukawa scale, y_star dimensionless screening scale
-   */
   double J_prime (double y, double y0, double y_star);
-
-
 
   /**
    * Returns the moment
@@ -122,39 +108,24 @@ public:
    * \param a_final scale factor at which the yukawa potential is evaluated
    */
   double sigma_J_sq (double k, double a, double a_final = 1.0);
-
-
-  /**
-   * Returns the moment
-   * \f[
-   *   \sigma_J_prime^2 =
-   *     \frac{k^3}{(2\pi)^2}\int_0^\infty dy\,y^2\,P(ky)\,J_prime(y,y_0,y_star)
-   * \f]
-   * of the initial power spectrum with the kernel function \f$J_prime(y,y_0,y_star)\f$.
-   * \param k wave number
-   * \param a scale factor
-   * \param a_final scale factor at which the yukawa potential is evaluated
-   */
   double sigma_J_prime_sq (double k, double a, double a_final = 1.0);
-
-
 
   /**
    * Returns the time derivative of \f$\sigma_J^2\f$.
    * \param k wave number
    * \param a scale factor
    * \param a_final scale factor at which the yukawa potential is evaluated
-  
+   */
+/*
   double sigma_J_sq_dot (double k, double a, double a_final = 1.0);
-
   /**
    *Returns the derivative of \f$\sigma_J^2\f$ with respect to the amplitude of
    *the initial density fluctuation power spectrum.
    * \param k wave number
    * \param a scale factor
    * \param a_final scale factor at which the yukawa potential is evaluated
-   
-  double dsigma_J_sq_dA (double k, double a, double a_final = 1.0);
+   */
+  /*double dsigma_J_sq_dA (double k, double a, double a_final = 1.0);
 
   /**
    * Returns the averaged potential gradient
@@ -167,8 +138,8 @@ public:
    * \param k wave number
    * \param a scale factor
    * \param a_final scale factor at which the yukawa potential is evaluated
-   */
- /* double v12_parallel (double k, double a, double a_final = 1.0);
+   
+  double v12_parallel (double k, double a, double a_final = 1.0);
 
   /**
    * Returns the averaged force
@@ -212,8 +183,6 @@ public:
 
   double m(double a);
 
-  /*double m_dot(double a, double k);*/                 
-
   double g_qp_hamilton(double a, double a_prime);
 
   double linearP (double k, double a);
@@ -221,7 +190,7 @@ public:
   double analyticP (double k, double a);
 
   double numericalP (double k, double a);
-
+  
   double taylorP (double k, double a);
 };
 
