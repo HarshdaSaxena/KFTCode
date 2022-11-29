@@ -9,8 +9,8 @@ forceTerm::forceTerm
   (astro::abstractGrowthFactor * growth_model_in,
    astro::cosmologyBase * cosmological_model_in,
    astro::gEffective * g_effective_in, double a_norm_in, int proptype):
-a_min (0.001), a_max (1.0), k_min (0.01), k_max (10.0), k_scale (0.5), k_star (1.0),
-a_save (-1.0), k_save (-1.0), f_k_save (-1.0), f_r_save (-1.0), n_table (32),
+a_min (0.001), a_max (1.0), k_min (0.01), k_max (10.0), k_scale (0.0), k_star (1.0),
+a_save (-1.0), k_save (-1.0), f_k_save (-1.0), f_r_save (-1.0), n_table (128),
 g_effective (g_effective_in), proptype (proptype)
 {
   if (cosmological_model_in != NULL)
@@ -54,6 +54,7 @@ g_effective (g_effective_in), proptype (proptype)
   if (growth_model_in != NULL)
       cosmic_structures->setGrowthFactor (growth_model_in);
 
+  proptype = proptype;
   a_norm = a_norm_in;
 
   D_plus_min = cosmic_structures->Dplus (a_min);
@@ -67,6 +68,7 @@ g_effective (g_effective_in), proptype (proptype)
 
   init_tau ();
   init_tables ();
+  std::cout<<tau<<std::endl; 
 
 }
 
@@ -86,7 +88,7 @@ forceTerm::~forceTerm()
   delete cosmic_structures;
 }
 
-void forceTerm::init_tau () /*fitting stuff for Yukawa scale*/
+void forceTerm::init_tau ()
 {
   linear_spectrum->setFilter (gauss_filter);
 
@@ -149,14 +151,13 @@ void forceTerm::init_tables (double f_k, double f_r)
   sigma_J_sq_table.fill
     ([&] (double k, double a)
     {
-      double r = sigma_1*f_r*displacement (std::max(0.0,propagator->g_qp (a))); /* r = sigma_v^2 lambda^2*/
+      double r = sigma_1*f_r*displacement (std::max(0.0,propagator->g_qp (a)));
       astro::integrator integrate ([&] (double y)
       { return
           y*y*amplitude*linear_spectrum->operator () (y,a_norm)/
           (1.0+y*y*r*r)*
-          J (y/k, f_k*k_scale/k)/gsl_pow_2 (2.0*M_PI); },1.0e-2); /* integrate y^2 linear spectrum == P_i by damping, y_0/k = k_scale/k, f_k some rescaling ignore  */
-        return integrate (0.0);
-      
+          J (y/k, f_k*k_scale/k)/gsl_pow_2 (2.0*M_PI); });
+      return integrate (0.0);
     }, astro::LOG_SPACING, astro::LOG_SPACING, n_table, n_table,
     k_min, k_max, a_min, a_max);
 
@@ -173,8 +174,7 @@ void forceTerm::init_tables (double f_k, double f_r)
       return integrate (0.0);
     }, astro::LOG_SPACING, astro::LOG_SPACING, n_table, n_table,
     k_min, k_max, a_min, a_max);
-
-  /*
+/*
   sigma_J_sq_dot_table.fill
     ([&] (double k, double a)
     {
@@ -203,28 +203,27 @@ void forceTerm::init_tables (double f_k, double f_r)
     }, astro::LOG_SPACING, astro::LOG_SPACING, n_table, n_table,
     k_min, k_max, a_min, a_max);
 
-
     if(proptype==1)
       init_tables_zeldovich(f_k, f_r);
-    */
+*/
+
 }
 
-
-/* 
-void forceTerm::init_tables_zeldovich (double f_k, double f_r) /*entire thing in case you need to use the zeldovich part
- {
+/*
+void forceTerm::init_tables_zeldovich (double f_k, double f_r)
+{
   v12_parallel_table.fill
     ([&] (double k, double a)
     {
       return
         g_effective->operator()(a)*propagator->g_dot (a)/propagator->g (a)*
-        cosmic_structures->Dplus (a)/D_plus_min*sigma_J_sq_table (k, a); /* v_12 average is g_effective*A_phi*sigma_J^2*D_plus^2, with A_phi = g_dot/(g*D_plus) 
+        cosmic_structures->Dplus (a)/D_plus_min*sigma_J_sq_table (k, a);
 
     }, astro::LOG_SPACING, astro::LOG_SPACING, n_table, n_table,
     k_min, k_max, a_min, a_max);
 
   f12_parallel_table.fill
-    ([&] (double k, double a) /*effective force term in deviation from Zeldovich trajectories
+    ([&] (double k, double a)
     {
       astro::integrator integrate ([&] (double x)
         { return propagator->g (x)*v12_parallel_table (k, x)*
@@ -240,14 +239,13 @@ void forceTerm::init_tables_zeldovich (double f_k, double f_r) /*entire thing in
 }
 */
 
-double forceTerm::displacement (double t) /*Lambda*/
+double forceTerm::displacement (double t)
 {
   return t/(1.0+sqrt (t/tau)); }
 
-//include asymtotic behaviour for large arguments to prevent oscilations
+//include asymtotic behaviour for large arguments to prefent oscilations
 //in sigma_J_sq_dot
-
-double forceTerm::J (double y, double y0) /*J definition*/
+double forceTerm::J (double y, double y0)
 {
   return (y<=100)? (1.0+0.25*(1.0-y*y-y0*y0)/y*
   log ((y0*y0+gsl_pow_2 (1.0+y))/(y0*y0+gsl_pow_2 (1.0-y))))
@@ -268,7 +266,7 @@ double forceTerm::sigma_J_sq (double k, double a, double a_final)
 {
     if (fabs (a_final-a_save) > 1.0e-3)
     {
-      k_scale = get_Yukawa_scale (1.0);
+      k_scale = get_Yukawa_scale (a_final);
       init_tables();
     }
     a_save = a_final;
@@ -285,12 +283,13 @@ double forceTerm::sigma_J_prime_sq (double k, double a, double a_final)
     a_save = a_final;
 
   return sigma_J_prime_sq_table (k, a); }
+/*
 
-/* double forceTerm::sigma_J_sq_dot (double k, double a, double a_final)
+double forceTerm::sigma_J_sq_dot (double k, double a, double a_final)
 {
     if (fabs (a_final-a_save) > 1.0e-3)
     {
-      k_scale = get_Yukawa_scale (1.0);
+      k_scale = get_Yukawa_scale (a_final);
       init_tables();
     }
     a_save = a_final;
@@ -301,29 +300,29 @@ double forceTerm::dsigma_J_sq_dA (double k, double a, double a_final)
 {
     if (fabs (a_final-a_save) > 1.0e-3)
     {
-      k_scale = get_Yukawa_scale (1.0);
+      k_scale = get_Yukawa_scale (a_final);
       init_tables();
     }
     a_save = a_final;
 
   return dsigma_J_sq_dA_table (k, a); }
 
-double forceTerm::v12_parallel (double k, double a, double a_final, double k_star) /*to make sure the fit is nice
+double forceTerm::v12_parallel (double k, double a, double a_final)
 {
     if (fabs (a_final-a_save) > 1.0e-3)
     {
-      k_scale = get_Yukawa_scale (1.0);
+      k_scale = get_Yukawa_scale (a_final);
       init_tables();
     }
     a_save = a_final;
 
   return v12_parallel_table (k, a); }
 
-double forceTerm::f12_parallel(double k, double a, double a_final, double k_star)
+double forceTerm::f12_parallel(double k, double a, double a_final)
 {
     if (fabs (a_final-a_save) > 1.0e-3)
     {
-      k_scale = get_Yukawa_scale (1.0);
+      k_scale = get_Yukawa_scale (a_final);
       init_tables();
     }
     a_save = a_final;
@@ -347,7 +346,8 @@ double forceTerm::interaction_term_hamilton (double k, double a) /*3*int g_H *G_
 double forceTerm::interaction_term_normal (double k, double a) /*3*int g_H *G_eff* 1/(a^2 D_plus' E)* D_plus^2*sigma_J^2 D_plus' gets cancelled from t->a variable change in intg*/
 { astro::integrator integrate
     ([&] (double x)
-    {
+    { //astro::cosmologicalParameters * p = cos_model->getParameters ();
+      //screeningParameters * q = reinterpret_cast<screeningParameters*> (p->par);
       return
         1./a_min*propagator_h->g_qp(a,x)*
         pow(Dplus(x,k),2.)*(sigma_J_sq_table(k,x))/pow(x/a_min,2.)/E(x); },1.0e-2);
@@ -368,21 +368,9 @@ double forceTerm::taylorfactor (double k, double a) /*3*int g_H *G_eff* 1/(a^2 D
   return integrate (a_min, a);
 }
 
-/*
-double forceTerm::interaction_term_zeldovich (double k, double a)
-{
-  astro::integrator integrate
-    ([&] (double x)
-    {
-      return
-        propagator->g_qp (a, x)*
-        f12_parallel_table (k, x)*
-        propagator->jacobian (x)/x; }, 1.0e-3);
 
-  return 2.0*integrate (a_min, a);
-}
 
-*/
+
 
 double forceTerm::operator () (double k, double a)
 {
@@ -453,12 +441,11 @@ double forceTerm::get_Yukawa_scale (double a)
   double p[2] = {1.0, 1.0};
   nl_model (p);
   return p[1];
-
 }
 
 void forceTerm::set_factors (double f_k, double f_r, double a)
 {
-  k_scale = 0.5;
+  k_scale = 0.0;
   init_tables ();
   k_scale = get_Yukawa_scale (a);
   init_tables (f_k, f_r);
@@ -487,18 +474,19 @@ double forceTerm::g_qp_hamilton (double a, double a_prime)
 
 double forceTerm::m(double a)
 { return propagator->g(a);}
-/*
-double forceTerm::m_dot(double a)
-{ return propagator->g_dot(a);}
-*/
-double forceTerm::linearP (double k, double a) /*initial power spectrum*/
+
+/*double forceTerm::m_dot(double a)
+{ return propagator->g_dot(a);}*/
+
+double forceTerm::linearP (double k, double a)
 { return linear_spectrum->operator () (k, a); }
 
-double forceTerm::analyticP (double k, double a) /*nonLinear powerspectrum*/
-{ return Dplus(a,k)*Dplus(a,k)*amplitude*linear_spectrum->operator () (k, a_norm)*
+double forceTerm::analyticP (double k, double a)
+{ std::cout<<k_scale;
+  return Dplus(a,k)*Dplus(a,k)*amplitude*linear_spectrum->operator () (k, a_norm)*
   exp (operator () (k, a));}
 
-double forceTerm::numericalP (double k, double a) 
+double forceTerm::numericalP (double k, double a)
 { return nonlinear_spectrum->operator () (k, a); }
 
 double forceTerm::taylorP (double k, double a) 
@@ -509,5 +497,4 @@ double forceTerm::derivative (double y, double x) /*taking k=10.0 since want y t
 { screeningParameters q (cosmological_model,x);
   return 3.0*propagator_h->g_qp(1.0,x)*y*pow(Dplus(x,10.0),2.)*linear_spectrum->operator () (10.0*(1.0-y), x)/pow(x/a_min,2.)/E(x)/(pow(k_scale/10.0,2.)+ pow(y,2.0)); 
 }
-
 
